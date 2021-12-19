@@ -151,232 +151,95 @@ Add up all of the snailfish numbers from the homework assignment in the order th
  */
 
 const fs = require('fs');
+const sumAndScoreSFNums = require('./helpers/day18/sumAndScoreSFNums');
+
+// const testInput = fs
+//   .readFileSync('./input/day18_test.txt', 'utf-8')
+//   .split('\n')
+//   .map((el) => JSON.parse(el));
+
+// console.log('Test Result: ', sumAndScoreSFNums(testInput)); // 4140
 
 const input = fs
   .readFileSync('./input/day18.txt', 'utf-8')
   .split('\n')
   .map((el) => JSON.parse(el));
 
-const nums = [
-  [1, 1],
-  [2, 2],
-  [3, 3],
-  [4, 4],
-];
-
-let start = nums[0];
-for (let i = 1; i < nums.length; i += 1) {
-  start = addSFNums(start, nums[i]);
-}
-console.log(start);
-
-function addSFNums(num1, num2) {
-  return [num1, num2];
-}
-
-const testNum1 = [[[[[9, 8], 1], 2], 3], 4]; // result [[[[0,9],2],3],4]
-const testNum2 = [[6, [5, [4, [3, 2]]]], 1]; // result [[6,[5,[7,0]]],3]
-explodeSFNum(testNum1);
-console.log(JSON.stringify(testNum1) === '[[[[0,9],2],3],4]');
-explodeSFNum(testNum2);
-console.log(JSON.stringify(testNum2) === '[[6,[5,[7,0]]],3]');
-
-function explodeSFNum(num) {
-  let prevArray = null;
-  let prevNumInd = null;
-  let nextArray = null;
-  let nextNumInd = null;
-  let exploded;
-  let leftVal;
-  let rightVal;
-
-  function explodeHelper(num, depth = 0) {
-    // If we have exploded and found the number to the right, we can escape:
-    if (exploded && nextArray !== null) {
-      return;
-    }
-    // Iterate through number array, keep track of the last value to the left we find until we find a number pair to explode
-    for (let i = 0; i < num.length; i += 1) {
-      if (Array.isArray(num[i]) && (depth !== 3 || exploded)) {
-        explodeHelper(num[i], depth + 1);
-      } else if (
-        Array.isArray(num[i]) &&
-        !exploded &&
-        num[i].length === 2 &&
-        typeof num[i][0] === 'number' &&
-        typeof num[i][1] === 'number'
-      ) {
-        // We explode this array:
-        leftVal = num[i][0];
-        rightVal = num[i][1];
-        num[i] = 0;
-        exploded = true;
-      } else if (!exploded) {
-        // If not yet exploded we need to keep track of the last val to the left:
-        prevArray = num;
-        prevNumInd = i;
-      } else if (exploded && nextArray === null && typeof num[i] === 'number') {
-        // If we have exploded we want to find the next num to the right
-        nextArray = num;
-        nextNumInd = i;
-      }
-    }
-  }
-  explodeHelper(num);
-  // Add exploded numbers to the numbers to the left and right:
-  if (exploded) {
-    if (prevArray) {
-      prevArray[prevNumInd] += leftVal;
-    }
-    if (nextArray) {
-      nextArray[nextNumInd] += rightVal;
-    }
-    return true;
-  }
-
-  return false;
-}
-
-const testNum3 = [10]; // Splits into [[5,5]]
-splitSFNum(testNum3);
-console.log(JSON.stringify(testNum3) === '[[5,5]]');
-
-function splitSFNum(num, split = [false]) {
-  if (split[0]) {
-    return;
-  }
-
-  for (let i = 0; i < num.length; i += 1) {
-    if (Array.isArray(num[i])) {
-      splitSFNum(num[i], split);
-    } else if (num[i] >= 10) {
-      const left = Math.floor(num[i] / 2);
-      const right = Math.ceil(num[i] / 2);
-      num[i] = [left, right];
-      split[0] = true;
-    }
-  }
-  return split[0];
-}
-
-const testNum4 = [
-  [
-    [[[4, 3], 4], 4],
-    [7, [[8, 4], 9]],
-  ],
-  [1, 1],
-];
-reduceSFNum(testNum4);
 console.log(
-  'Test 4 Result: ',
-  JSON.stringify(testNum4) === '[[[[0,7],4],[[7,8],[6,0]]],[8,1]]'
-);
+  'Part 1 Answer: Magnitude of SnailFish Sum: ',
+  sumAndScoreSFNums(input)[1]
+); // 4120
 
-function reduceSFNum(num) {
-  let reduced = false;
-  while (!reduced) {
-    // Try to explode, if we explode then we skip splitting:
-    const exploded = explodeSFNum(num);
-    if (exploded) continue;
+/**
+ *  --- Part Two ---
+You notice a second question on the back of the homework assignment:
 
-    // If we can't split or explode we have finished reducing
-    const split = splitSFNum(num);
-    if (!split) reduced = true;
-  }
+What is the largest magnitude you can get from adding only two of the snailfish numbers?
 
-  return;
-}
+Note that snailfish addition is not commutative - that is, x + y and y + x can produce different results.
 
-const testNum5 = [
-  [
-    [
-      [6, 6],
-      [7, 6],
-    ],
-    [
-      [7, 7],
-      [7, 0],
-    ],
-  ],
-  [
-    [
-      [7, 7],
-      [7, 7],
-    ],
-    [
-      [7, 8],
-      [9, 9],
-    ],
-  ],
-];
+Again considering the last example homework assignment above:
 
-console.log(scoreSFNum([9, 1])); // 29
-console.log(
-  scoreSFNum([
-    [9, 1],
-    [1, 9],
-  ])
-); // 129
-console.log(scoreSFNum(testNum5)); // 4140
+[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
+[[[5,[2,8]],4],[5,[[9,9],0]]]
+[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]
+[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]
+[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]
+[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]
+[[[[5,4],[7,7]],8],[[8,3],8]]
+[[9,3],[[9,9],[6,[4,9]]]]
+[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
+[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]
+The largest magnitude of the sum of any two snailfish numbers in this list is 3993. This is the magnitude of [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]] + [[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]], which reduces to [[[[7,8],[6,6]],[[6,0],[7,7]]],[[[7,8],[8,8]],[[7,9],[0,6]]]].
 
-// Scores are calcuated recursively from the left and right of each pair
+What is the largest magnitude of any sum of two different snailfish numbers from the homework assignment?
+ */
 
-function scoreSFNum(num) {
-  // Reduce scores down until we are left with a single pair
-  while (typeof num[0] !== 'number' || typeof num[1] !== 'number') {
-    reduceScores(num);
-  }
+// const testInput2 = fs
+//   .readFileSync('./input/day18_test5.txt', 'utf-8')
+//   .split('\n')
+//   .map((el) => JSON.parse(el));
 
-  // Converts all pairs found to corresponding scores
-  function reduceScores(num) {
-    for (let i = 0; i < num.length; i += 1) {
-      if (Array.isArray(num[i])) {
-        if (
-          num[i].length === 2 &&
-          typeof num[i][0] === 'number' &&
-          typeof num[i][1] === 'number'
-        ) {
-          num[i] = 3 * num[i][0] + 2 * num[i][1];
-        } else {
-          reduceScores(num[i]);
-        }
-      }
-    }
-  }
-  return num[0] * 3 + num[1] * 2;
-}
+// console.log('Part 2 Test: ', findLargestPair(testInput2)); // 3993
 
-// console.log('Part 1 Answer: ', sumAndScoreSFNums(input));
-
-const testInput = fs
-  .readFileSync('./input/day18_test.txt', 'utf-8')
+const input2 = fs
+  .readFileSync('./input/day18.txt', 'utf-8')
   .split('\n')
   .map((el) => JSON.parse(el));
 
-console.log('Test Result: ', sumAndScoreSFNums(testInput)); //4140
+console.log(
+  'Part 2 Answer: Largest number possible with sum of any two different SF nums: ',
+  findLargestPair(input2)
+); // 4725
 
-// Something is going wrong when reducing the larger set of numbers
+/**
+ * Sums every possible pair in every order from the input SF Nums
+ * Finds the highest possible sum from a pair of different SF Nums
+ * Brute force approach - try every possible sum
+ * O(2*n^2) Time complexity
+ * @param {SnailFishNum[]} input Array of SnailFish numbers to try
+ * @returns {Number} Maximum score achievable by summing any two SF Nums
+ */
+function findLargestPair(input) {
+  let largestResult = 0;
+  for (let i = 0; i < input.length - 1; i += 1) {
+    for (let j = 1; j < input.length; j += 1) {
+      const num1Str = JSON.stringify(input[i]);
+      const num2Str = JSON.stringify(input[j]);
 
-function sumAndScoreSFNums(numsList) {
-  let num = numsList[0];
-
-  for (let i = 1; i < numsList.length; i += 1) {
-    console.log('Adding number: ', i);
-    num = addSFNums(num, numsList[i]);
-    console.log('Added num is: ', JSON.stringify(num));
-    reduceSFNum(num);
-    console.log('Reduced num is: ', JSON.stringify(num));
+      // We must test both orders since SF addition is not commutative:
+      // X + Y !== Y + X
+      const result1 = sumAndScoreSFNums([
+        JSON.parse(num1Str),
+        JSON.parse(num2Str),
+      ])[1];
+      const result2 = sumAndScoreSFNums([
+        JSON.parse(num2Str),
+        JSON.parse(num1Str),
+      ])[1];
+      const bigger = result1 > result2 ? result1 : result2;
+      largestResult = bigger > largestResult ? bigger : largestResult;
+    }
   }
-
-  return scoreSFNum(num);
+  return largestResult;
 }
-
-console.log(
-  '[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]' ===
-    '[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]'
-);
-
-console.log(
-  '[[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]' ===
-    '[[[[6,7],[7,7]],[[7,7],[7,0]]],[[[7,7],[8,9]],[[5,8],[8,0]]]]'
-);
