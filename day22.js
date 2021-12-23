@@ -113,11 +113,18 @@ const fs = require('fs');
 const input = fs.readFileSync('./input/day22.txt', 'utf-8').split('\n');
 const instructions = parseInput(input);
 // For part 1 input is small enough we can use this brute force approach:
+// Takes about 3 seconds to run
 console.log(
   'Part 1 Answer: Number of cubes on after initialisation',
   rebootReactor(instructions)
 ); // 611176;
 
+/**
+ * Takes raw puzzle input and parses it into an array of instructions
+ * @param {String[]} input Raw puzzle input strings
+ * @returns {Number[][]} Array of parsed puzzle instructions in format:
+ * [state, xMin, xMax, yMin, yMax, zMin, zMax]
+ */
 function parseInput(input) {
   let xMin = Infinity;
   let xMax = -Infinity;
@@ -161,19 +168,19 @@ function parseInput(input) {
       instruction.push(...[x1, x2, y1, y2, z1, z2]);
       return instruction;
     });
-  console.log(xMin, xMax, yMin, yMax, zMin, zMax);
   return instructions;
 }
 
-function rebootReactor(instructions, initial = true) {
-  let reactor;
-  let adjustment;
-  let reactSize;
-  if (initial) {
-    reactSize = 101;
-    reactor = np.zeros(101, 101, 101);
-    adjustment = 50;
-  }
+/**
+ * Carries out the reactor reboot initialisation process
+ * (Only considers instructions in region -50/+50 x/y/z)
+ * @param {Number[][]} instructions Array of instructions to be performed
+ * @returns {Number} Total number of lit cubes after initialisation steps
+ */
+function rebootReactor(instructions) {
+  let reactor = np.zeros(101, 101, 101);
+  let adjustment = 50;
+  let reactSize = 101;
 
   // Iterate through list of instructions:
   for (let i = 0; i < instructions.length; i += 1) {
@@ -185,7 +192,6 @@ function rebootReactor(instructions, initial = true) {
     const [val, xMin, xMax, yMin, yMax, zMin, zMax] = instruction;
     // If we are initialising, ignore any instructions with coords outside +/- 50
     if (
-      initial &&
       Math.max(
         ...[xMin, xMax, yMin, yMax, zMin, zMax].map((num) => Math.abs(num))
       ) > 100
@@ -300,4 +306,88 @@ Starting again with all cubes off, execute all reboot steps. Afterward, consider
 
 // For part two need to look at cube intersection algorithms!
 // Size of cube required is too large to model directly (20k x 20k x 20k)
+
 // Instead need to store lit cuboids of certain dimensions and then intersect the other lit / dark cuboids with them, generating smaller lit cuboids
+
+// Alternatively we can use the Set Addition Inclusion-Exclusion principle:
+// If A and B are both lit cuboids, the total number of lit cubes is
+// |A + B| = |A| + |B| - |A n B|
+
+// If A is lit and B is unlit (off command), the total number of lit cubes is:
+// |A + B| = |A| - |A n B|
+
+// If A is an 'unlit' section of cubes to cancel out an overlap / B is off command then:
+// |A + B| = |A| - |A n B| (since B will create its own off section like A) etc..
+
+const input2 = parseInput(input);
+// Takes about 1 second to run (!)
+console.log(
+  'Part 2 Answer: Number of cubes lit after full instruction set: ',
+  inclusionExclusion(input2)
+); // 1201259791805392 ~ 1*10^15 (!)
+
+/**
+ * Performs full reactor startup (using all instructions) and returns
+ * the total number of lit cubes after doing so, using inclusion-exclusion
+ * @param {Number[][]} instructions Reactor start up instructions
+ * @returns {Number} Number of lit cubes after start up
+ */
+function inclusionExclusion(instructions) {
+  let cuboids = [];
+
+  for (let i = 0; i < instructions.length; i += 1) {
+    const [action, xMin, xMax, yMin, yMax, zMin, zMax] = instructions[i];
+    const intersections = [];
+    // Intersect the instruction with every cuboid so far:
+    for (let j = 0; j < cuboids.length; j += 1) {
+      const [state, xCMin, xCMax, yCMin, yCMax, zCMin, zCMax] = cuboids[j];
+
+      // If cuboids don't intersect, continue:
+      // e.g. if max x coord of instruction is less than min x coord of current cuboid
+      if (
+        xMax < xCMin ||
+        xCMax < xMin ||
+        yMax < yCMin ||
+        yCMax < yMin ||
+        zMax < zCMin ||
+        zCMax < zMin
+      ) {
+        continue;
+      }
+
+      // Otherwise find the area that they intersect:
+      const x1 = Math.max(xMin, xCMin);
+      const x2 = Math.min(xMax, xCMax);
+      const y1 = Math.max(yMin, yCMin);
+      const y2 = Math.min(yMax, yCMax);
+      const z1 = Math.max(zMin, zCMin);
+      const z2 = Math.min(zMax, zCMax);
+
+      // * If the instruction is on, and the current cuboid is on (state = 1),
+      // we need to substract the intersecting cuboid to avoid double counting
+      // * If the instruction is off and the current cuboid is on,
+      // we need to substract the same intersecting area to simulate turning the lights off
+      // * If the instruction is on and the current cuboid is a negative (state = -1),
+      // we need to add cancel out the subtraction, turning the lights back on.
+      // * If the instruction is off and the current cuboid is a negative (state = -1),
+      // we need to again cancel out the substraction, to avoid double counting negative over the same area.
+      intersections.push([state * -1, x1, x2, y1, y2, z1, z2]);
+    }
+    // If the instruction is 'on' we need to add the cuboid to our list too:
+    if (action === 1) {
+      cuboids.push([action, xMin, xMax, yMin, yMax, zMin, zMax]);
+    }
+
+    // Then add all intersections to our current list of cuboids:
+    cuboids.push(...intersections);
+  }
+
+  // We now have a set of positive and negative cuboids representing the areas of lights that should be on/off after performing the instructions.
+  // We just need to sum the total number of cubes in these areas:
+  let total = 0;
+  for (let i = 0; i < cuboids.length; i += 1) {
+    const [val, xMin, xMax, yMin, yMax, zMin, zMax] = cuboids[i];
+    total += val * (xMax + 1 - xMin) * (yMax + 1 - yMin) * (zMax + 1 - zMin);
+  }
+  return total;
+}
