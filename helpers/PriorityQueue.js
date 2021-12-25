@@ -1,6 +1,6 @@
 /**
  * Priorty Queue Implementation using a Min Heap
- * Uniquely stringifiable node objects and their cost/values can be stored
+ * Takes values of nodes as strings, with an associated value / cost
  * Will always return the currently stored node with the lowest cost
  */
 class PriorityQueue {
@@ -16,7 +16,7 @@ class PriorityQueue {
   // Add node to Priority Queue
   add(node, value) {
     this.heap.push([node, value]);
-    this.nodeToIndex[JSON.stringify(node)] = this.heap.length - 1;
+    this.nodeToIndex[node] = this.heap.length - 1;
     // Sift added node up into correct position:
     this.siftUp(this.heap.length - 1);
   }
@@ -29,7 +29,7 @@ class PriorityQueue {
     this.swap(0, this.heap.length - 1);
     // Remove and delete the node we are removing
     const [node, value] = this.heap.pop();
-    delete this.nodeToIndex[JSON.stringify(node)];
+    delete this.nodeToIndex[node];
     // Sift the swapped node down to correct position in heap:
     this.siftDown(0);
     return [node, value];
@@ -37,21 +37,20 @@ class PriorityQueue {
 
   // Update node value in Heap and move it to correct position in queue:
   update(node, value) {
-    const nodeStr = JSON.stringify(node);
-    if (!(nodeStr in this.nodeToIndex)) {
+    if (!(node in this.nodeToIndex)) {
       return;
     }
     // Update node value and sift it up to correct position
     // This assumes the node value will be updated to a lower value
-    this.heap[this.nodeToIndex[nodeStr]] = [node, value];
-    this.siftUp(this.nodeToIndex[nodeStr]);
+    this.heap[this.nodeToIndex[node]] = [node, value];
+    this.siftUp(this.nodeToIndex[node]);
   }
 
   // Swap position of two nodes in heap and nodeToIndex Obj
   swap(index1, index2) {
     // Swap indices held in nodeToIndex object
-    this.nodeToIndex[JSON.stringify(this.heap[index1][1])] = index2;
-    this.nodeToIndex[JSON.stringify(this.heap[index2][1])] = index1;
+    this.nodeToIndex[this.heap[index1][0]] = index2;
+    this.nodeToIndex[this.heap[index2][0]] = index1;
 
     // Swap node and value positions in heap:
     const temp = this.heap[index1];
@@ -94,27 +93,42 @@ class PriorityQueue {
       parentInd = Math.floor((currInd - 1) / 2);
     }
   }
+
+  // Returns the current cost of a node if it is in the PQ, else -1;
+  contains(node) {
+    if (!(node in this.nodeToIndex)) return -1;
+    return this.heap[this.nodeToIndex[node]][1];
+  }
 }
 
 // Priority Queue Test Cases:
 // const test = new PriorityQueue();
 // console.log(test.isEmpty()); // true;
-// test.add({ hi: 'hello' }, 5);
-// test.add({ yo: 'hello' }, 2);
-// test.add({ bye: 'goodbye' }, 1);
+// test.add('hi', 5);
+// test.add('hello', 2);
+// test.add('goodbye', 1);
 
 // console.log(test.isEmpty()); // false;
-// console.log(test.remove()); // [{ bye: 'goodbye' }, 1]
-// console.log(test.remove()); // [{ yo: 'hello' }, 2]
-// console.log(test.remove()); // [{ hi: 'hello' }, 5]
+// console.log(test.remove()); // ['goodbye', 1]
+// console.log(test.remove()); // ['hello', 2]
+// console.log(test.remove()); // ['hello', 5]
 // console.log(test.isEmpty()); // true;
 
-// test.add({ hi: 'hello' }, 5);
-// test.add({ yo: 'hello' }, 2);
-// test.add({ bye: 'goodbye' }, 1);
-// test.update({ hi: 'hello' }, -1);
-// test.update({ bye: 'goodbye' }, 10);
+// test.add('hi', 5);
+// test.add('hello', 2);
+// test.add('goodbye', 1);
 
-// console.log(test.remove()); // [{ hi: 'hello' }, -1]
-// console.log(test.remove()); // [{ yo: 'hello' }, 2]
-// console.log(test.remove()); // [{ bye: 'goodbye' }, 10]
+// test.update('hello', -1);
+// test.update('goodbye', 10);
+
+// console.log('Heap: \n: ', test.heap, 'Obj: \n: ', test.nodeToIndex);
+
+// console.log(test.contains('goodbye')); // 10
+// console.log(test.contains('hello')); // -1
+// console.log(test.contains('hi')); // 5
+
+// console.log(test.remove()); // ['hello', -1]
+// console.log(test.remove()); // ['hi', 5]
+// console.log(test.remove()); // ['goodbye', 10]
+
+module.exports = PriorityQueue;
