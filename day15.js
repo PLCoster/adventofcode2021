@@ -37,11 +37,14 @@ What is the lowest total risk of any path from the top left to the bottom right?
 
 const fs = require('fs');
 
-const testInput = fs.readFileSync('./input/day15_test.txt', 'utf-8');
+// const testInput = fs.readFileSync('./input/day15_test.txt', 'utf-8');
 
-console.log(minRisk(testInput)); // 40
+// console.log(minRisk(testInput)); // 40
 
 const input = fs.readFileSync('./input/day15.txt', 'utf-8');
+
+// Calculate the minimum risk route on the small size cave
+// Completes in < 500ms
 console.log('Part 1 Answer: Lowest Risk Path across graph: ', minRisk(input)); // 609
 
 /**
@@ -293,7 +296,7 @@ Using the full map, what is the lowest total risk of any path from the top left 
 // console.log(minRisk(testInput, true)); // 315 Looks ok
 
 // Brute force djikstras on the larger sized cave
-// Takes a few mins to complete (250k nodes to explore)
+// Takes around 250 seconds to complete (250k nodes to explore)
 // Could possibly be sped up by using a priority queue to hold the next nodes to explore,
 // rather than having to search the grid for them each time
 console.log(
